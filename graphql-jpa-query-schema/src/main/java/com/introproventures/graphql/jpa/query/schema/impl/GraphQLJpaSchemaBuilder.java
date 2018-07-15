@@ -225,6 +225,12 @@ public class GraphQLJpaSchemaBuilder implements GraphQLSchemaBuilder {
                 .map(this::getWhereInputField)
                 .collect(Collectors.toList())
             )
+            .fields(entityType.getAttributes().stream()
+                .filter(this::isToOne)
+                .filter(this::isNotIgnored)
+                .map(this::getWhereAssociationInputField)
+                .collect(Collectors.toList())
+            )
             .build();
         
         whereArgument = GraphQLArgument.newArgument()
@@ -238,7 +244,15 @@ public class GraphQLJpaSchemaBuilder implements GraphQLSchemaBuilder {
         return whereArgument;
         
     }
-    
+
+    private GraphQLInputObjectField getWhereAssociationInputField(Attribute<?,?> attribute) {
+        return GraphQLInputObjectField.newInputObjectField()
+                .name(attribute.getName())
+                .description(attribute.getName())
+                .type(new GraphQLTypeReference(namingStrategy.pluralize(attribute.getJavaType().getSimpleName())+"CriteriaExpression"))
+                .build();
+    }
+
     private GraphQLInputObjectField getWhereInputField(Attribute<?,?> attribute) {
         GraphQLType type = getWhereAttributeType(attribute);
         String description = getSchemaDescription(attribute.getJavaMember());

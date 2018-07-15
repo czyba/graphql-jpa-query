@@ -360,7 +360,7 @@ class QraphQLJpaBaseDataFetcher implements DataFetcher<Object> {
             : cb.and(predicates.toArray(new Predicate[predicates.size()]));
     }
 
-    private Predicate getFieldPredicate(String fieldName, CriteriaBuilder cb, From<?,?> path, ObjectField objectField, DataFetchingEnvironment environment, Argument argument) {
+    private Predicate getFieldPredicate(String fieldName, CriteriaBuilder cb, Path<?> path, ObjectField objectField, DataFetchingEnvironment environment, Argument argument) {
         ObjectValue expressionValue = (ObjectValue) objectField.getValue();
 
         if(expressionValue.getChildren().isEmpty())
@@ -384,7 +384,7 @@ class QraphQLJpaBaseDataFetcher implements DataFetcher<Object> {
         JpaPredicateBuilder pb = new JpaPredicateBuilder(cb, EnumSet.of(Logical.AND));
 
         expressionValue.getObjectFields().stream()
-            .filter(it -> !Arrays.asList("AND","OR").contains(it.getName()))
+            .filter(it -> !Arrays.asList("AND","OR").contains(it.getName()) && it.getValue().getChildren().isEmpty())
             .map(it -> getPredicateFilter(new ObjectField(fieldName, it.getValue()),
                 new ArgumentEnvironment(environment, argument.getName()),
                 new Argument(it.getName(), it.getValue()))
@@ -393,6 +393,15 @@ class QraphQLJpaBaseDataFetcher implements DataFetcher<Object> {
             .map(it -> pb.getPredicate(path, path.get(it.getField()), it))
             .filter(predicate -> predicate != null)
             .forEach(predicates::add);
+
+        expressionValue.getObjectFields().stream()
+                .filter(it -> !Arrays.asList("AND","OR").contains(it.getName()) && !it.getValue().getChildren().isEmpty())
+                .map(it -> getFieldPredicate(it.getName(), cb, path.get(fieldName), it,
+                        new ArgumentEnvironment(environment, argument.getName()),
+                        new Argument(it.getName(), it.getValue()))
+                )
+                .filter(predicate -> predicate != null)
+                .forEach(predicates::add);
 
         return  (logical == Logical.OR)
             ? cb.or(predicates.toArray(new Predicate[predicates.size()]))

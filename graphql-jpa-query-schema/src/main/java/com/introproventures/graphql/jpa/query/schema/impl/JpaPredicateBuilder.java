@@ -279,7 +279,7 @@ class JpaPredicateBuilder {
     }
 
     @SuppressWarnings("unchecked")
-    private Predicate getTypedPredicate(From<?,?> from, Path<?> field, PredicateFilter filter) {
+    private Predicate getTypedPredicate(Path<?> from, Path<?> field, PredicateFilter filter) {
         Class<?> type = field.getJavaType();
         Object value = filter.getValue();
         Set<Criteria> criterias = filter.getCriterias();
@@ -324,7 +324,7 @@ class JpaPredicateBuilder {
         }
         else if(Collection.class.isAssignableFrom(type)) {
             if(field.getModel() == null)
-                return from.join(filter.getField()).in(value);
+                return ((From)from).join(filter.getField()).in(value);
         }
 
         throw new IllegalArgumentException("Unsupported field type " + type + " for field " + predicateFilter.getField());
@@ -340,7 +340,7 @@ class JpaPredicateBuilder {
      * @return constructed predicate, returns null if value cannot be converted
      * to field type
      */
-    public Predicate getPredicate(From<?,?> from, Path<?> field, PredicateFilter filter) {
+    public Predicate getPredicate(Path<?> from, Path<?> field, PredicateFilter filter) {
         return getTypedPredicate(from, field, filter);
     }
 }
